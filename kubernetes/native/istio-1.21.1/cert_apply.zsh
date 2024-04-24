@@ -51,5 +51,5 @@ spec:
 EOF
 
 
-curl -v -HHost:httpbin.psawesome.xyz --resolve "httpbin.psawesome.xyz:$SECURE_INGRESS_PORT:$INGRESS_HOST" \
-  --cacert example_certs1/psawesome.xyz.crt "https://httpbin.psawesome.xyz:$SECURE_INGRESS_PORT/status/418"
+curl -v -HHost:httpbin.psawesome.xyz --resolve "httpbin.psawesome.xyz" \
+  --cacert example_certs1/psawesome.xyz.crt "https://httpbin.psawesome.xyz/status/418"

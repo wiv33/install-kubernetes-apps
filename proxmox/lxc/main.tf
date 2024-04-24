@@ -12,7 +12,7 @@ resource "proxmox_lxc" "k-master" {
   unprivileged = true
   tags         = "terraform;k8s-master;23.10;ubuntu"
   cores        = 4
-  hostname     = "k8s-master-${count.index}"
+  hostname     = "master${count.index}"
   password     = var.os_password
   memory       = 16384
   onboot       = true
@@ -49,7 +49,7 @@ resource "proxmox_lxc" "k-worker" {
   unprivileged = true
   tags         = "terraform;k8s-worker;23.10;ubuntu"
   cores        = 4
-  hostname     = "k8s-worker-${count.index}"
+  hostname     = "worker${count.index}"
   password     = var.os_password
   memory       = 16384 * 2
   onboot       = true
@@ -70,7 +70,7 @@ resource "proxmox_lxc" "k-worker" {
   network {
     name     = "eth0"
     bridge   = local.bridge
-    ip       = "${local.ip_prefix}.12${count.index}/24"
+    ip       = "${local.ip_prefix}.14${count.index}/24"
     gw       = local.gw_prefix
     ip6      = "dhcp"
     firewall = false
