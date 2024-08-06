@@ -1,2 +1,0 @@
-# Terraform
-192.168.0.16    master1
