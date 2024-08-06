@@ -39,10 +39,12 @@ resource "helm_release" "istiod" {
   wait       = true
   namespace  = kubernetes_namespace.istio-system.metadata.0.name
   values = [file("../../istio/istiod/values.yaml")]
+/*
   set {
     name  = "defaults.pilot.nodeSelector.kubernetes\\.io/hostname"
     value = "web-worker-0"
   }
+*/
 }
 
 resource "kubernetes_namespace" "istio-ingress" {
@@ -60,10 +62,12 @@ resource "helm_release" "istio-ingress" {
   namespace  = kubernetes_namespace.istio-ingress.metadata.0.name
   wait = true
   values = [file("../../istio/gateway/values.yaml")]
+/*
   set {
     name  = "defaults.nodeSelector.kubernetes\\.io/hostname"
     value = "web-worker-0"
   }
+*/
 }
 
 data "kubernetes_service_v1" "istio-ingress-svc" {
@@ -81,10 +85,6 @@ locals {
   http_external_port = local.http2.port
   https_external_port = local.https.port
 
-  iptime_http_port_name  = "istio-http2-terraform"
-  iptime_https_port_name = "istio-https-terraform"
-
-  target_iptime_inner_server = "192.168.1.40"
   always_run = timestamp()
 }
 
