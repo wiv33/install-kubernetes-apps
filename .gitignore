@@ -1,2 +1,7 @@
 HELP.md
 .idea
+
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+terraform.tfvars
