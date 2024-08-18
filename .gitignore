@@ -5,3 +5,5 @@ HELP.md
 terraform.tfstate
 terraform.tfstate.backup
 terraform.tfvars
+
+.terraform
