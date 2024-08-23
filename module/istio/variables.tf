@@ -24,3 +24,29 @@ variable "iptime_https_port_name" {
 variable "target_iptime_inner_server" {
   description = "Target iptime inner server"
 }
+
+variable "domain" {
+  description = "Domain for the application"
+}
+
+variable "records_cname" {
+  description = "IP address for the records"
+}
+
+variable "records_ip" {
+  description = "IP address for the records"
+}
+
+variable "tls_secret_name" {
+  description = "Name of the tls secret"
+}
+
+variable "aws_secret_key" {
+  description = "AWS secret key"
+}
+variable "aws_access_key" {
+  description = "AWS access key"
+}
+variable "zone_id" {
+  description = "Zone id of route53"
+}
