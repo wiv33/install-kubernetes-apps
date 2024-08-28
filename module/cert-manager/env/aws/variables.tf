@@ -24,6 +24,10 @@ variable "domain" {
   description = "Domain name"
 }
 
+variable "domain_config_name" {
+  description = "Domain config name"
+}
+
 variable "issuer_email" {
   description = "Email address for letsencrypt"
 }

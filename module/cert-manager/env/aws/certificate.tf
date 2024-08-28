@@ -18,7 +18,7 @@ resource "kubernetes_manifest" "letsencrypt_dns01_route53_issuer" {
     kind       = "Issuer"
 
     metadata = {
-      name      = "letsencrypt-dns01-route53-pubps-xyz-issuer"
+      name      = "letsencrypt-dns01-route53-${var.domain_config_name}-issuer"
       namespace = "istio-ingress"
     }
 
@@ -28,7 +28,7 @@ resource "kubernetes_manifest" "letsencrypt_dns01_route53_issuer" {
         email  = var.issuer_email
 
         privateKeySecretRef = {
-          name = "letsencrypt-dns01-route53-pubps-xyz-key-pair"
+          name = "letsencrypt-dns01-route53-${var.domain_config_name}-key-pair"
         }
 
         solvers = [
@@ -60,18 +60,18 @@ resource "kubernetes_manifest" "letsencrypt_dns01_route53_issuer" {
   }
 }
 
-resource "kubernetes_manifest" "pubps_xyz_cert" {
+resource "kubernetes_manifest" "certificate" {
   manifest = {
     apiVersion = "cert-manager.io/v1"
     kind       = "Certificate"
 
     metadata = {
-      name      = "pubps-xyz-cert"
+      name      = "${var.domain_config_name}-cert"
       namespace = "istio-ingress"
     }
 
     spec = {
-      secretName = "pubps-xyz-key-pair"
+      secretName = "${var.domain_config_name}-key-pair"
       commonName = var.domain
 
       dnsNames = [
