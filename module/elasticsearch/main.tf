@@ -3,7 +3,7 @@ locals {
   version  = "7.17.3"
 }
 
-resource "kubernetes_namespace" "elastic" {
+data "kubernetes_namespace" "elastic" {
   metadata {
     name = "elastic"
   }
@@ -12,10 +12,21 @@ resource "kubernetes_namespace" "elastic" {
 resource "kubernetes_secret" "elastic-secret" {
   metadata {
     name      = "elastic-credentials"
-    namespace = kubernetes_namespace.elastic.metadata.0.name
+    namespace = data.kubernetes_namespace.elastic.metadata.0.name
   }
   data = {
     password = base64encode(var.elastic_password)
+    username = base64encode("elastic")
+  }
+}
+
+resource "kubernetes_secret" "certificate" {
+  metadata {
+    name      = "elastic-certificates"
+    namespace = data.kubernetes_namespace.elastic.metadata.0.name
+  }
+  data = {
+    "elastic-certificates.p12" = filebase64("elastic-certificates.p12")
   }
 }
 
@@ -26,16 +37,10 @@ resource "helm_release" "elasticsearch" {
   chart      = "elasticsearch"
   name       = "elasticsearch"
   version    = local.version
-  namespace  = kubernetes_namespace.elastic.metadata.0.name
-#   values = [file("../../elastic/elasticsearch/values.yaml")]
+  namespace  = data.kubernetes_namespace.elastic.metadata.0.name
 
   set {
     name  = "protocol"
-    value = "http"
-  }
-
-  set {
-    name  = "service.httpPortName"
     value = "http"
   }
 
@@ -102,6 +107,24 @@ resource "helm_release" "elasticsearch" {
     value = "password"
   }
 
+  #   set {
+  #     name  = "esConfig.elasticsearch\\.yml"
+  #     value = "thread_pool.write.queue_size: 333\ncluster.max_shards_per_node: 999\nxpack.security.enabled: true\nxpack.security.transport.ssl.enabled: true\nxpack.security.transport.ssl.verification_mode: certificate\nxpack.security.transport.ssl.keystore.path: /usr/share/elasticsearch/config/certs/elastic-certificates.p12\nxpack.security.transport.ssl.truststore.path: /usr/share/elasticsearch/config/certs/elastic-certificates.p12\nxpack.security.http.ssl.truststore.path: /usr/share/elasticsearch/config/certs/elastic-certificates.p12\nxpack.security.http.ssl.keystore.path: /usr/share/elasticsearch/config/certs/elastic-certificates.p12\nxpack.security.http.ssl.enabled: true\n"
+  #   }
+  #
+  #   set {
+  #     name  = "secretMounts[0].name"
+  #     value = "elastic-certificates"
+  #   }
+  #   set {
+  #     name  = "secretMounts[0].secretName"
+  #     value = "elastic-certificates"
+  #   }
+  #   set {
+  #     name  = "secretMounts[0].path"
+  #     value = "/usr/share/elasticsearch/config/certs"
+  #   }
+
 }
 
 resource "helm_release" "kibana" {
@@ -111,8 +134,13 @@ resource "helm_release" "kibana" {
   chart      = "kibana"
   name       = "kibana"
   version    = local.version
-  namespace  = kubernetes_namespace.elastic.metadata.0.name
+  namespace  = data.kubernetes_namespace.elastic.metadata.0.name
   values = [file("../../elastic/kibana/values.yaml")]
+
+  set {
+    name  = "elasticsearchCredentialSecret"
+    value = "elastic-credentials"
+  }
 
   set {
     name  = "tolerations[0].key"
@@ -124,7 +152,7 @@ resource "helm_release" "kibana" {
   }
   set {
     name  = "tolerations[0].value"
-    value = "stateful"
+    value = "web"
   }
   set {
     name  = "tolerations[0].effect"
@@ -137,7 +165,7 @@ data "kubernetes_service" "elastic-svc" {
   depends_on = [helm_release.elasticsearch]
   metadata {
     name      = "elasticsearch-master"
-    namespace = kubernetes_namespace.elastic.metadata.0.name
+    namespace = data.kubernetes_namespace.elastic.metadata.0.name
   }
 }
 
@@ -147,7 +175,7 @@ resource "kubernetes_manifest" "elastic-vs" {
     kind       = "VirtualService"
     metadata = {
       name      = "elastic-vs"
-      namespace = kubernetes_namespace.elastic.metadata.0.name
+      namespace = data.kubernetes_namespace.elastic.metadata.0.name
     }
 
     spec = {
@@ -165,7 +193,7 @@ resource "kubernetes_manifest" "elastic-vs" {
           route = [
             {
               destination = {
-                host = "${data.kubernetes_service.elastic-svc.metadata.0.name}.${kubernetes_namespace.elastic.metadata.0.name}.svc.cluster.local"
+                host = "${data.kubernetes_service.elastic-svc.metadata.0.name}.${data.kubernetes_namespace.elastic.metadata.0.name}.svc.cluster.local"
                 port = {
                   number = data.kubernetes_service.elastic-svc.spec[0].port[0].port
                 }
@@ -184,14 +212,14 @@ resource "kubernetes_manifest" "elastic-dr" {
     kind       = "DestinationRule"
     metadata = {
       name      = "elastic-dr"
-      namespace = kubernetes_namespace.elastic.metadata.0.name
+      namespace = data.kubernetes_namespace.elastic.metadata.0.name
     }
 
     spec = {
-      host = "${data.kubernetes_service.elastic-svc.metadata.0.name}.${kubernetes_namespace.elastic.metadata.0.name}.svc.cluster.local"
+      host = "${data.kubernetes_service.elastic-svc.metadata.0.name}.${data.kubernetes_namespace.elastic.metadata.0.name}.svc.cluster.local"
       trafficPolicy = {
         loadBalancer = {
-#           simple = "ROUND_ROBIN"
+          #           simple = "ROUND_ROBIN"
           simple = "LEAST_CONN"
         }
       }
@@ -199,3 +227,69 @@ resource "kubernetes_manifest" "elastic-dr" {
   }
 }
 
+
+data "kubernetes_service" "kibana-svc" {
+  depends_on = [helm_release.kibana]
+  metadata {
+    name      = "kibana-kibana"
+    namespace = data.kubernetes_namespace.elastic.metadata.0.name
+  }
+}
+
+resource "kubernetes_manifest" "kibana-vs" {
+  manifest = {
+    apiVersion = "networking.istio.io/v1beta1"
+    kind       = "VirtualService"
+    metadata = {
+      name      = "kibana-vs"
+      namespace = data.kubernetes_namespace.elastic.metadata.0.name
+    }
+
+    spec = {
+      hosts = ["kibana.${var.domain}"]
+      gateways = [var.istio_gateway]
+      http = [
+        {
+          match = [
+            {
+              uri = {
+                prefix = "/"
+              }
+            }
+          ]
+          route = [
+            {
+              destination = {
+                host = "${data.kubernetes_service.kibana-svc.metadata.0.name}.${data.kubernetes_namespace.elastic.metadata.0.name}.svc.cluster.local"
+                port = {
+                  number = data.kubernetes_service.kibana-svc.spec[0].port[0].port
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+
+resource "kubernetes_manifest" "kibana-dr" {
+  manifest = {
+    apiVersion = "networking.istio.io/v1alpha3"
+    kind       = "DestinationRule"
+    metadata = {
+      name      = "kibana-dr"
+      namespace = data.kubernetes_namespace.elastic.metadata.0.name
+    }
+
+    spec = {
+      host = "${data.kubernetes_service.kibana-svc.metadata.0.name}.${data.kubernetes_namespace.elastic.metadata.0.name}.svc.cluster.local"
+      trafficPolicy = {
+        loadBalancer = {
+          #           simple = "ROUND_ROBIN"
+          simple = "LEAST_CONN"
+        }
+      }
+    }
+  }
+}
