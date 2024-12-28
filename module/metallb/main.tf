@@ -8,13 +8,49 @@ resource "kubernetes_namespace" "metallb-system" {
   }
 }
 
-resource "helm_release" "bitnami-metallb" {
-  repository = "https://charts.bitnami.com/bitnami"
-  chart      = "metallb"
+# MetalLB 설치
+# MetalLB Helm 설치
+resource "helm_release" "metallb" {
   name       = "metallb"
-  namespace  = "metallb-system"
-  version    = "6.3.9"
-  wait       = true
+  namespace  = kubernetes_namespace.metallb-system.metadata[0].name
+  repository = "https://metallb.github.io/metallb"
+  chart      = "metallb"
+  version    = "0.13.10" # 원하는 MetalLB Chart 버전
+
+  set {
+    name  = "controller.tolerations[0].key"
+    value = "type"
+  }
+  set {
+    name  = "controller.tolerations[0].value"
+    value = "web"
+  }
+  set {
+    name  = "controller.tolerations[0].operator"
+    value = "Equal"
+  }
+  set {
+    name  = "controller.tolerations[0].effect"
+    value = "NoSchedule"
+  }
+
+  set {
+    name  = "speaker.tolerations[0].key"
+    value = "type"
+  }
+  set {
+    name  = "speaker.tolerations[0].value"
+    value = "web"
+  }
+  set {
+    name  = "speaker.tolerations[0].operator"
+    value = "Equal"
+  }
+  set {
+    name  = "speaker.tolerations[0].effect"
+    value = "NoSchedule"
+  }
+
 }
 
 /*
@@ -37,7 +73,7 @@ spec:
     - fc00:f853:0ccd:e799::/124
  */
 resource "kubernetes_manifest" "ip-pool" {
-  depends_on = [helm_release.bitnami-metallb]
+  depends_on = [helm_release.metallb]
   manifest = {
     apiVersion = "metallb.io/v1beta1"
     kind       = "IPAddressPool"

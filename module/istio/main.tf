@@ -1,6 +1,6 @@
 locals {
   istio_repo_url = "https://istio-release.storage.googleapis.com/charts"
-  version        = "1.22.3"
+  version        = "1.24.2"
 }
 
 # data "kubernetes_namespace" "istio-system" {
@@ -24,10 +24,10 @@ resource "helm_release" "istio-base" {
   namespace    = kubernetes_namespace.istio-system.metadata.0.name
   reset_values = true
   values = [file("../../istio/base/values.yaml")]
-  set {
-    name  = "defaultRevision"
-    value = "default"
-  }
+  # set {
+  #   name  = "defaultRevision"
+  #   value = "default"
+  # }
 }
 
 resource "helm_release" "istiod" {
@@ -38,27 +38,22 @@ resource "helm_release" "istiod" {
   version    = local.version
   wait       = true
   namespace  = kubernetes_namespace.istio-system.metadata.0.name
-  values = [file("../../istio/istiod/values.yaml")]
+  # values = [file("../../istio/istiod/values.yaml")]
 
   set {
-    name  = "defaults.pilot.nodeSelector.kubernetes\\.io/hostname"
-    value = "web-worker-0"
-  }
-
-  set {
-    name  = "defaults.pilot.tolerations[0].key"
+    name  = "_internal_defaults_do_not_set.pilot.tolerations[0].key"
     value = "type"
   }
   set {
-    name  = "defaults.pilot.tolerations[0].operator"
+    name  = "_internal_defaults_do_not_set.pilot.tolerations[0].operator"
     value = "Equal"
   }
   set {
-    name  = "defaults.pilot.tolerations[0].value"
+    name  = "_internal_defaults_do_not_set.pilot.tolerations[0].value"
     value = "web"
   }
   set {
-    name  = "defaults.pilot.tolerations[0].effect"
+    name  = "_internal_defaults_do_not_set.pilot.tolerations[0].effect"
     value = "NoSchedule"
   }
 }
@@ -77,28 +72,23 @@ resource "helm_release" "istio-ingress" {
   version    = local.version
   namespace  = kubernetes_namespace.istio-ingress.metadata.0.name
   wait = true
-  values = [file("../../istio/gateway/values.yaml")]
+  # values = [file("../../istio/gateway/values.yaml")]
 
   set {
-    name  = "defaults.tolerations[0].key"
+    name  = "_internal_defaults_do_not_set.tolerations[0].key"
     value = "type"
   }
   set {
-    name  = "defaults.tolerations[0].operator"
+    name  = "_internal_defaults_do_not_set.tolerations[0].operator"
     value = "Equal"
   }
   set {
-    name  = "defaults.tolerations[0].value"
+    name  = "_internal_defaults_do_not_set.tolerations[0].value"
     value = "web"
   }
   set {
-    name  = "defaults.tolerations[0].effect"
+    name  = "_internal_defaults_do_not_set.tolerations[0].effect"
     value = "NoSchedule"
-  }
-
-  set {
-    name  = "defaults.nodeSelector.kubernetes\\.io/hostname"
-    value = "web-worker-0"
   }
 
 }
@@ -106,7 +96,7 @@ resource "helm_release" "istio-ingress" {
 resource "kubernetes_manifest" "gateway" {
   depends_on = [helm_release.istio-ingress]
   manifest = {
-    apiVersion = "networking.istio.io/v1alpha3"
+    apiVersion = "networking.istio.io/v1"
     kind       = "Gateway"
 
     metadata = {
@@ -157,7 +147,7 @@ data "kubernetes_service_v1" "istio-ingress-svc" {
   }
 }
 
-locals {
+/*locals {
   http2 = [for k, v in data.kubernetes_service_v1.istio-ingress-svc.spec[0].port: v if v.name == "http2"][0]
   https = [for k, v in data.kubernetes_service_v1.istio-ingress-svc.spec[0].port: v if v.name == "https"][0]
   istio_http_port = local.http2.node_port
@@ -256,3 +246,4 @@ resource "null_resource" "iptime_assign_istio_https_port_add" {
     always_run = tostring(local.always_run)
   }
 }
+*/
