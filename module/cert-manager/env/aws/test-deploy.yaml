@@ -65,6 +65,6 @@ spec:
             prefix: /
       route:
         - destination:
-            host: nginx-svc.istio-system.svc.cluster.local
+            host: nginx-svc.default.svc.cluster.local
             port:
               number: 8080
