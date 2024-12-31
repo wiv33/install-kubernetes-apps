@@ -6,28 +6,30 @@ openebs-crds:
     volumeSnapshots:
       enabled: true
       keep: true
-  tolerations:
-    - key: type
-      operator: Equal
-      value: web
-      effect: NoSchedule
-    - key: type
-      operator: Equal
-      value: backbone
-      effect: NoSchedule
+  global:
+    tolerations:
+      - key: type
+        operator: Equal
+        value: web
+        effect: NoSchedule
+      - key: type
+        operator: Equal
+        value: backbone
+        effect: NoSchedule
 # Refer to https://github.com/openebs/dynamic-localpv-provisioner/blob/HEAD/deploy/helm/charts/values.yaml for complete set of values.
 localpv-provisioner:
   rbac:
     create: true
-  tolerations:
-    - key: type
-      operator: Equal
-      value: web
-      effect: NoSchedule
-    - key: type
-      operator: Equal
-      value: backbone
-      effect: NoSchedule
+  localpv:
+    tolerations:
+      - key: type
+        operator: Equal
+        value: web
+        effect: NoSchedule
+      - key: type
+        operator: Equal
+        value: backbone
+        effect: NoSchedule
 # Refer to https://github.com/openebs/zfs-localpv/blob/HEAD/deploy/helm/charts/values.yaml for complete set of values.
 zfs-localpv:
   enabled: true
@@ -37,15 +39,16 @@ zfs-localpv:
     csi:
       volumeSnapshots:
         enabled: false
-  tolerations:
-    - key: type
-      operator: Equal
-      value: web
-      effect: NoSchedule
-    - key: type
-      operator: Equal
-      value: backbone
-      effect: NoSchedule
+  zfsController:
+    tolerations:
+      - key: type
+        operator: Equal
+        value: web
+        effect: NoSchedule
+      - key: type
+        operator: Equal
+        value: backbone
+        effect: NoSchedule
 # Refer to https://github.com/openebs/lvm-localpv/blob/HEAD/deploy/helm/charts/values.yaml for complete set of values.
 lvm-localpv:
   enabled: true
@@ -55,15 +58,26 @@ lvm-localpv:
     csi:
       volumeSnapshots:
         enabled: false
-  tolerations:
-    - key: type
-      operator: Equal
-      value: web
-      effect: NoSchedule
-    - key: type
-      operator: Equal
-      value: backbone
-      effect: NoSchedule
+  lvmNode:
+    tolerations:
+      - key: type
+        operator: Equal
+        value: web
+        effect: NoSchedule
+      - key: type
+        operator: Equal
+        value: backbone
+        effect: NoSchedule
+  lvmController:
+    tolerations:
+      - key: type
+        operator: Equal
+        value: web
+        effect: NoSchedule
+      - key: type
+        operator: Equal
+        value: backbone
+        effect: NoSchedule
 # Refer to https://github.com/openebs/mayastor-extensions/blob/v2.7.0/chart/values.yaml for complete set of values.
 mayastor:
   enabled: true
