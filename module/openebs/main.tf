@@ -9,9 +9,10 @@ resource "helm_release" "openebs" {
   chart            = "openebs"
   name             = "openebs"
   namespace        = kubernetes_namespace.openebs.metadata[0].name
-  values = [file("../../openebs/values.yaml")]
   create_namespace = true
-  version = "4.1.0"
+  version          = "4.1.0"
+  reuse_values     = true
+  values = [file("../../openebs/values.yaml")]
 
   set {
     name  = "mayastor.enabled"
