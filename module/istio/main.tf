@@ -71,7 +71,7 @@ resource "helm_release" "istio-ingress" {
   name       = "istio-ingress"
   version    = local.version
   namespace  = kubernetes_namespace.istio-ingress.metadata.0.name
-  wait = true
+  wait       = true
   # values = [file("../../istio/gateway/values.yaml")]
 
   set {
@@ -134,25 +134,7 @@ resource "kubernetes_manifest" "gateway" {
             mode           = "SIMPLE"
             credentialName = var.tls_secret_name
           }
-        }
-      ]
-    }
-  }
-}
-
-resource "kubernetes_manifest" "gateway-tcp" {
-  manifest = {
-    apiVersion = "networking.istio.io/v1alpha3"
-    kind       = "Gateway"
-    metadata = {
-      name      = "tcp-gateway"
-      namespace = "istio-ingress"
-    }
-    spec = {
-      selector = {
-        istio = "ingress"
-      }
-      servers = [
+        },
         {
           port = {
             number   = 9092
