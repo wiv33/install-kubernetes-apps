@@ -61,7 +61,7 @@ resource "helm_release" "elasticsearch" {
   }
   set {
     name  = "tolerations[0].value"
-    value = "stateful"
+    value = "web"
   }
   set {
     name  = "tolerations[0].effect"
@@ -106,25 +106,6 @@ resource "helm_release" "elasticsearch" {
     name  = "extraEnvs[0].valueFrom.secretKeyRef.key"
     value = "password"
   }
-
-  #   set {
-  #     name  = "esConfig.elasticsearch\\.yml"
-  #     value = "thread_pool.write.queue_size: 333\ncluster.max_shards_per_node: 999\nxpack.security.enabled: true\nxpack.security.transport.ssl.enabled: true\nxpack.security.transport.ssl.verification_mode: certificate\nxpack.security.transport.ssl.keystore.path: /usr/share/elasticsearch/config/certs/elastic-certificates.p12\nxpack.security.transport.ssl.truststore.path: /usr/share/elasticsearch/config/certs/elastic-certificates.p12\nxpack.security.http.ssl.truststore.path: /usr/share/elasticsearch/config/certs/elastic-certificates.p12\nxpack.security.http.ssl.keystore.path: /usr/share/elasticsearch/config/certs/elastic-certificates.p12\nxpack.security.http.ssl.enabled: true\n"
-  #   }
-  #
-  #   set {
-  #     name  = "secretMounts[0].name"
-  #     value = "elastic-certificates"
-  #   }
-  #   set {
-  #     name  = "secretMounts[0].secretName"
-  #     value = "elastic-certificates"
-  #   }
-  #   set {
-  #     name  = "secretMounts[0].path"
-  #     value = "/usr/share/elasticsearch/config/certs"
-  #   }
-
 }
 
 resource "helm_release" "kibana" {
@@ -153,6 +134,23 @@ resource "helm_release" "kibana" {
   set {
     name  = "tolerations[0].value"
     value = "web"
+  }
+  set {
+    name  = "tolerations[0].effect"
+    value = "NoSchedule"
+  }
+
+  set {
+    name  = "tolerations[0].key"
+    value = "type"
+  }
+  set {
+    name  = "tolerations[0].operator"
+    value = "Equal"
+  }
+  set {
+    name  = "tolerations[0].value"
+    value = "backbone"
   }
   set {
     name  = "tolerations[0].effect"
