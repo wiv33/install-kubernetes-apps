@@ -98,6 +98,25 @@ resource "kubernetes_manifest" "kafka-vs" {
   }
 }
 
+/*
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-ui-configmap
+data:
+  config.yml: |-
+    kafka:
+      clusters:
+        - name: yaml
+          bootstrapServers: kafka-cluster-broker-endpoints:9092
+    auth:
+      type: disabled
+    management:
+      health:
+        ldap:
+          enabled: false
+ */
+
 resource "helm_release" "kafka-ui" {
   depends_on = [helm_release.kafka]
   repository   = "https://provectus.github.io/kafka-ui-charts"
