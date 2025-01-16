@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: sync-rds-to-snowflake-analysis
+  namespace: vircle-cron
+spec:
+  schedule: "10 17 * * *" #	Run every 5 minute
+  concurrencyPolicy: Forbid # 동시에 실행되는 Job 제한
+  startingDeadlineSeconds: 300 # 최대 5분 지연 허용
+  timeZone: Asia/Seoul
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: sync-rds-to-snowflake-analysis
+              image: {account}.dkr.ecr.ap-northeast-2.amazonaws.com/vircle/sync-rds-to-snowflake-analysis:latest
+              imagePullPolicy: Always
+              resources:
+                requests:
+                  memory: "250Mi"
+                limits:
+                  memory: "500Mi"
+                  cpu: "500m"
+
+          restartPolicy: OnFailure
