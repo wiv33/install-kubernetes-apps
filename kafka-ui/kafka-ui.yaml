@@ -1,0 +1,39 @@
+yamlApplicationConfig:
+  kafka:
+    clusters:
+      - name: confluent-integration-cluster
+        bootstrapServers: SASL_SSL://lkc-123xsw.ap-northeast-2.aws.private.confluent.cloud:9092
+        schemaRegistry: http://schema-registry-cp-schema-registry.confluent.svc.cluster.local:8081
+        defaultKeySerde: SchemaRegistry
+        defaultValueSerde: SchemaRegistry
+        properties:
+          security.protocol: SASL_SSL
+          sasl.mechanism: PLAIN
+          sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="username" password="password";
+        masking: 
+          - type: REPLACE
+            fields: [ "phone", "user_phone", "recipient" ]
+            #maskingCharsReplacement: ["A", "a", "N", "_"]  #optional
+            #topicValuesPattern: "TABLE_*)"
+            replacement: "****"
+            topicValuesPattern: "dev.*"
+  spring:
+    security:
+      user:
+        name: admin
+        password: admin
+  auth:
+    type: login_form
+
+ # auth:
+ #   type: OAUTH2
+ #   oauth2:
+ #     client:
+ #       github:
+ #         provider: github
+ #         clientId: xxx
+ #         clientSecret: yyy
+ #         scope: read:org
+ #         user-name-attribute: login
+ #         custom-params:
+ #           type: github
