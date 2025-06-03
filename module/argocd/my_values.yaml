@@ -1,0 +1,55 @@
+USER-SUPPLIED VALUES: null
+global:
+  # -- Default domain used by all components
+  ## Used for ingresses, certificates, SSO, notifications, etc.
+  domain: argo.pubps.xyz
+server:
+  extensions:
+    enabled: true
+    extensionList:
+    - env:
+      - name: EXTENSION_URL
+        value: https://github.com/argoproj-labs/rollout-extension/releases/download/v0.3.4/extension.tar
+      name: rollout-extension
+  extraArgs:
+  - --insecure
+
+configs:
+
+  cm:
+    url: https://argo.pubps.xyz
+    dex.config: |
+      connectors:
+        - type: github
+          id: github
+          name: GitHub
+          config:
+            clientID: Ov23lih3Jzs2FHbMLDCb7
+            clientSecret: 3b186971addc661a23b31f7250ecf98adc30cc437
+            orgs:
+            - name: pubps
+              teams:
+                - init_team
+  rbac:
+    # -- Create the argocd-rbac-cm configmap with ([Argo CD RBAC policy]) definitions.
+    # If false, it is expected the configmap will be created by something else.
+    # Argo CD will not work if there is no configmap created with the name above.
+    create: true
+
+    # -- Annotations to be added to argocd-rbac-cm configmap
+    annotations: { }
+
+    # -- The name of the default role which Argo CD will falls back to, when authorizing API requests (optional).
+    # If omitted or empty, users may be still be able to login, but will see no apps, projects, etc...
+    policy.default: role:readonly
+    policy.matchMode: 'glob'
+    scopes: '[groups]'
+    # -- File containing user-defined policies and role definitions.
+    # @default -- `''` (See [values.yaml])
+    policy.csv: |
+      p, role:admin, *, *, *, allow
+      g, pubps:init_team, role:admin
+
+
+
+  

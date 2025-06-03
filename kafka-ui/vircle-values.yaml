@@ -1,0 +1,47 @@
+yamlApplicationConfig:
+  kafka:
+    clusters:
+      - name: integration
+        bootstrapServers: <BOOTSTRAP_SERVERS>
+        defaultKeySerde: SchemaRegistry
+        defaultValueSerde: SchemaRegistry
+        schemaRegistry: http://schema-registry-svc.kafka.svc.cluster.local:8081
+        kafkaConnect:
+          - name: dev-kafka-connect
+            address: http://vircle-connect-api.kafka.svc.cluster.local:8083
+        properties:
+          security.protocol: SASL_SSL
+          sasl.mechanism: AWS_MSK_IAM
+          sasl.client.callback.handler.class: software.amazon.msk.auth.iam.IAMClientCallbackHandler
+          sasl.jaas.config: software.amazon.msk.auth.iam.IAMLoginModule required;
+        masking:
+          - type: REPLACE
+            fields: [ "phone", "user_phone", "recipient" ]
+            #maskingCharsReplacement: ["A", "a", "N", "_"]  #optional
+            #topicValuesPattern: "(TB_CUSTOMER.*|TB_USER.*)"
+            replacement: "****"
+            topicValuesPattern: "prod.*"
+
+  spring:
+    security:
+      user:
+        name: admin
+        password: admin
+#  auth:
+#    type: login_form
+  auth:
+    type: disabled
+
+existingSecret: aws-creds
+  # auth:
+  #   type: OAUTH2
+  #   oauth2:
+  #     client:
+  #       github:
+  #         provider: github
+  #         clientId: xxx
+  #         clientSecret: yyy
+  #         scope: read:org
+  #         user-name-attribute: login
+  #         custom-params:
+  #           type: github

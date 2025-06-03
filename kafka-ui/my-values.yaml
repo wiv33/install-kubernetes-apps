@@ -1,0 +1,111 @@
+replicaCount: 1
+
+image:
+  registry: docker.io
+  repository: provectuslabs/kafka-ui
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+#  annotations:
+#    eks.amazonaws.com/role-arn: arn:aws:iam::677062093523:role/vircle-dev-k8s-pod-role
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "schema-registry-sa"
+
+existingConfigMap: ""
+yamlApplicationConfig:
+  kafka:
+    clusters:
+      - name: integration
+        bootstrapServers: <BOOTSTRAP_SERVERS>
+        properties:
+          security.protocol: SASL_SSL
+          sasl.mechanism: AWS_MSK_IAM
+          sasl.client.callback.handler.class: software.amazon.msk.auth.iam.IAMClientCallbackHandler
+          sasl.jaas.config: software.amazon.msk.auth.iam.IAMLoginModule required;
+        schemaRegistry: http://schema-registry.kafka:8081
+#        schemaRegistryAuth:
+#          username: user
+#          password: user
+
+yamlApplicationConfigConfigMap:
+  {}
+  # keyName: config.yml
+  # name: configMapName
+existingSecret: aws-creds
+envs:
+  secret: {}
+  config: {}
+
+podAnnotations: {}
+podLabels: {}
+
+## Annotations to be added to kafka-ui Deployment
+##
+annotations: {}
+
+## Set field schema as HTTPS for readines and liveness probe
+##
+probes:
+  useHttpsScheme: false
+
+podSecurityContext:
+  {}
+  # fsGroup: 2000
+
+securityContext:
+  {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+  # In case of service type LoadBalancer, you can specify reserved static IP
+  # loadBalancerIP: 10.11.12.13
+  # if you want to force a specific nodePort. Must be use with service.type=NodePort
+  # nodePort:
+
+# Ingress configuration
+resources:
+  {}
+  # limits:
+  #   cpu: 200m
+  #   memory: 512Mi
+  # requests:
+  #   cpu: 200m
+  #   memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+env: {}
+
+initContainers: {}
+
+volumeMounts: {}
+
+volumes: {}

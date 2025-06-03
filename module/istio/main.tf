@@ -1,6 +1,6 @@
 locals {
   istio_repo_url = "https://istio-release.storage.googleapis.com/charts"
-  version        = "1.24.2"
+  version        = "1.26.1"
 }
 
 # data "kubernetes_namespace" "istio-system" {
@@ -23,7 +23,7 @@ resource "helm_release" "istio-base" {
   version      = local.version
   namespace    = kubernetes_namespace.istio-system.metadata.0.name
   reset_values = true
-  values = [file("../../istio/base/values.yaml")]
+  # values = [file("../../istio/base/values.yaml")]
   # set {
   #   name  = "defaultRevision"
   #   value = "default"
@@ -41,19 +41,19 @@ resource "helm_release" "istiod" {
   # values = [file("../../istio/istiod/values.yaml")]
 
   set {
-    name  = "_internal_defaults_do_not_set.pilot.tolerations[0].key"
+    name  = "_internal_defaults_do_not_set.tolerations[0].key"
     value = "type"
   }
   set {
-    name  = "_internal_defaults_do_not_set.pilot.tolerations[0].operator"
+    name  = "_internal_defaults_do_not_set.tolerations[0].operator"
     value = "Equal"
   }
   set {
-    name  = "_internal_defaults_do_not_set.pilot.tolerations[0].value"
+    name  = "_internal_defaults_do_not_set.tolerations[0].value"
     value = "web"
   }
   set {
-    name  = "_internal_defaults_do_not_set.pilot.tolerations[0].effect"
+    name  = "_internal_defaults_do_not_set.tolerations[0].effect"
     value = "NoSchedule"
   }
 }
@@ -90,7 +90,129 @@ resource "helm_release" "istio-ingress" {
     name  = "_internal_defaults_do_not_set.tolerations[0].effect"
     value = "NoSchedule"
   }
+  ########################
+  # 0) status-port 15021 #
+  ########################
+  set {
+    name  = ""
+    value = ""
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[0].name"
+    value = "status-port"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[0].protocol"
+    value = "TCP"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[0].port"
+    value = "15021"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[0].targetPort"
+    value = "15021"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[0].nodePort"
+    value = "31710"
+  }
 
+  ####################
+  # 1) http2 80/TCP  #
+  ####################
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[1].name"
+    value = "http2"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[1].protocol"
+    value = "TCP"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[1].port"
+    value = "80"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[1].targetPort"
+    value = "80"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[1].nodePort"
+    value = "31449"
+  }
+
+  #####################
+  # 2) https 443/TCP  #
+  #####################
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[2].name"
+    value = "https"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[2].protocol"
+    value = "TCP"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[2].port"
+    value = "443"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[2].targetPort"
+    value = "443"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[2].nodePort"
+    value = "31723"
+  }
+
+  #############################
+  # 3) starrocks-mysql 9030/TCP #
+  #############################
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[3].name"
+    value = "starrocks-mysql"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[3].protocol"
+    value = "TCP"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[3].port"
+    value = "9030"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[3].targetPort"
+    value = "9030"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[3].nodePort"
+    value = "30903"
+  }
+
+  #############################
+  # 4) starrocks-http 8030/TCP #
+  #############################
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[4].name"
+    value = "starrocks-http"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[4].protocol"
+    value = "TCP"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[4].port"
+    value = "8030"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[4].targetPort"
+    value = "8030"
+  }
+  set {
+    name  = "_internal_defaults_do_not_set.service.ports[4].nodePort"
+    value = "30803"
+  }
 }
 
 resource "kubernetes_manifest" "gateway" {
@@ -155,6 +277,14 @@ resource "kubernetes_manifest" "gateway" {
           port = {
             number   = 3306
             name     = "mysql-tcp"
+            protocol = "TCP"
+          }
+          hosts = ["*"]
+        },
+        {
+          port = {
+            number   = 9030
+            name     = "starrocks-mysql"
             protocol = "TCP"
           }
           hosts = ["*"]

@@ -15,7 +15,7 @@ resource "helm_release" "metallb" {
   namespace  = kubernetes_namespace.metallb-system.metadata[0].name
   repository = "https://metallb.github.io/metallb"
   chart      = "metallb"
-  version    = "0.13.10" # 원하는 MetalLB Chart 버전
+  version    = "0.14.9"
 
   set {
     name  = "controller.tolerations[0].key"
