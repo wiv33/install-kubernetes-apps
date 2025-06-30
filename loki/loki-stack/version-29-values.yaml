@@ -1,0 +1,60 @@
+# ── Loki Stack 2.10.2 (App v2.9.3) ──────────────────────────────
+loki:
+  auth_enabled: false
+
+  storage_config:
+    boltdb_shipper:
+      active_index_directory: /loki/index
+      cache_location:         /loki/index_cache
+      shared_store: s3
+    aws:
+      s3: s3://ACCESS_KEY_ID:ACCESS_SECRET_KEY@ap-northeast-2
+      bucketnames: datalab-monitoring
+      region: ap-northeast-2
+      s3forcepathstyle: false
+  storage:
+    bucketNames:
+      chunks: datalab-monitoring
+      ruler: datalab-monitoring
+      admin: datalab-monitoring
+
+  schema_config:
+    configs:
+      - from: 2024-05-15
+        store: boltdb-shipper
+        object_store: s3          # ← 꼭 s3
+        schema: v11
+        index:
+          prefix: index_
+          period: 24h
+
+  commonConfig:
+    replication_factor: 1
+
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClassName: gp2
+
+  extraEnvFrom:
+    - secretRef:
+        name: loki-aws-creds
+
+# 서브차트 끄기/축소
+promtail:
+  enabled: false
+loki-canary:
+  enabled: false
+grafana:
+  enabled: false
+fluent-bit:
+  enabled: false
+
+# Results/Chunks cache 비활성화(소규모)
+resultsCache:
+  enabled: false
+memcached:
+  enabled: false
+
+rbac:
+  pspEnabled: false

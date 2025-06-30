@@ -7,7 +7,7 @@ spec:
   hosts:
     - '*'
   gateways:
-    - istio-ingress/default-gateway
+    - istio-system/istio-ingress-gateway
   tcp:
     - match:
         - port: 9030
@@ -16,3 +16,10 @@ spec:
             host: kube-starrocks-fe-service.starrocks.svc.cluster.local
             port:
               number: 9030
+    - match:
+        - port: 8030
+      route:
+        - destination:
+            host: kube-starrocks-fe-service.starrocks.svc.cluster.local
+            port:
+              number: 8030

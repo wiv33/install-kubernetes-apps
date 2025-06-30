@@ -1,0 +1,17 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::677062093523:oidc-provider/oidc.eks.ap-northeast-2.amazonaws.com/id/CB21C16EAE21881BF8489BE5727FF7DD"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "oidc-provider/oidc.eks.ap-northeast-2.amazonaws.com/id/CB21C16EAE21881BF8489BE5727FF7DD:sub": "system:serviceaccount:kafka:schema-registry-sa"
+        }
+      }
+    }
+  ]
+}
