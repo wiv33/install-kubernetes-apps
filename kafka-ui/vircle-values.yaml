@@ -16,7 +16,7 @@ yamlApplicationConfig:
           sasl.jaas.config: software.amazon.msk.auth.iam.IAMLoginModule required;
         masking:
           - type: REPLACE
-            fields: [ "phone", "user_phone", "recipient" ]
+            fields: [ "phone", "user_phone", "recipient", "infoPhone" ]
             #maskingCharsReplacement: ["A", "a", "N", "_"]  #optional
             #topicValuesPattern: "(TB_CUSTOMER.*|TB_USER.*)"
             replacement: "****"
