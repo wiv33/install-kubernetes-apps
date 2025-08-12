@@ -1,0 +1,16 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: cn-scaler
+  namespace: starrocks
+spec:
+  scaleTargetRef:
+    name: kube-starrocks-cn
+    kind: StatefulSet
+  minReplicaCount: 2
+  maxReplicaCount: 10
+  triggers:
+  - type: cpu
+    metricType: Utilization
+    metadata:
+      value: "80"
