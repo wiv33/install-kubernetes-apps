@@ -18,3 +18,26 @@ spec:
     metricType: Utilization
     metadata:
       value: "80"
+
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: fe-scaler
+  namespace: starrocks
+spec:
+  scaleTargetRef:
+    name: kube-starrocks-fe
+    kind: StatefulSet
+  minReplicaCount: 3
+  maxReplicaCount: 5
+  triggers:
+  - type: cpu
+    metricType: Utilization
+    metadata:
+      value: "60"
+  - type: memory
+    metricType: Utilization
+    metadata:
+      value: "60"
+
