@@ -8,9 +8,13 @@ spec:
     name: kube-starrocks-cn
     kind: StatefulSet
   minReplicaCount: 2
-  maxReplicaCount: 10
+  maxReplicaCount: 5
   triggers:
   - type: cpu
+    metricType: Utilization
+    metadata:
+      value: "80"
+  - type: memory
     metricType: Utilization
     metadata:
       value: "80"
