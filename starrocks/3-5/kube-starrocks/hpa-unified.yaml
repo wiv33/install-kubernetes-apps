@@ -1,0 +1,160 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: cn-scaler-unified
+  namespace: starrocks
+spec:
+  scaleTargetRef:
+    name: kube-starrocks-cn
+    kind: StatefulSet
+  minReplicaCount: 2
+  maxReplicaCount: 5
+  # 스케일 다운 정책 - 메모리 특성 고려
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          # 천천히 스케일 다운
+          stabilizationWindowSeconds: 1800  # 30분 관찰
+          policies:
+          - type: Pods
+            value: 1  # 한번에 1개씩만
+            periodSeconds: 600  # 10분마다
+          selectPolicy: Min
+        scaleUp:
+          # 빠르게 스케일 업
+          stabilizationWindowSeconds: 60  # 1분 관찰
+          policies:
+          - type: Pods
+            value: 2  # 한번에 2개씩
+            periodSeconds: 60
+          - type: Percent
+            value: 100  # 또는 100% 증가
+            periodSeconds: 60
+          selectPolicy: Max
+
+  triggers:
+  # 1. CPU 사용률 (Primary)
+  - type: cpu
+    metricType: Utilization
+    metadata:
+      value: "70"
+
+  # 2. Pod 메모리 사용률 (Pod 레벨 - 수정됨)
+  - type: prometheus
+    metadata:
+      serverAddress: http://monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090
+      metricName: starrocks_cn_memory_utilization
+      query: |
+        avg(
+          sum(container_memory_working_set_bytes{namespace="starrocks", pod=~"kube-starrocks-cn-.*", container="cn"}) by (pod)
+          /
+          sum(kube_pod_container_resource_limits{namespace="starrocks", pod=~"kube-starrocks-cn-.*", resource="memory", unit="byte"}) by (pod)
+        ) * 100
+      threshold: "85"  # Pod 메모리 85% 이상
+      activationThreshold: "70"  # 70%부터 모니터링 시작
+
+  # 3. 쿼리 처리량 (StarRocks 메트릭이 있는 경우)
+  - type: prometheus
+    metadata:
+      serverAddress: http://monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090
+      metricName: starrocks_cn_query_rate
+      query: |
+        sum(rate(starrocks_query_total{job="cn"}[5m])) / 
+        count(up{job="cn"})
+      threshold: "100"  # 노드당 100 queries/s
+      activationThreshold: "50"  # 50 queries/s부터 활성화
+
+  # 4. 활성 쿼리 수
+  - type: prometheus
+    metadata:
+      serverAddress: http://monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090
+      metricName: starrocks_cn_active_queries
+      query: |
+        avg(starrocks_running_queries{job="cn"})
+      threshold: "20"
+      activationThreshold: "10"
+
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cn-pdb
+  namespace: starrocks
+spec:
+  minAvailable: 2  # 최소 2개 노드 유지
+  selector:
+    matchLabels:
+      app: kube-starrocks
+      component: cn
+  unhealthyPodEvictionPolicy: IfHealthyBudget
+
+---
+# Vertical Pod Autoscaler (VPA가 설치된 경우에만 사용)
+# VPA 설치: https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler
+# kubectl apply -f https://github.com/kubernetes/autoscaler/releases/latest/download/vertical-pod-autoscaler.yaml
+#
+# apiVersion: autoscaling.k8s.io/v1
+# kind: VerticalPodAutoscaler
+# metadata:
+#   name: cn-vpa
+#   namespace: starrocks
+# spec:
+#   targetRef:
+#     apiVersion: apps/v1
+#     kind: StatefulSet
+#     name: kube-starrocks-cn
+#   updatePolicy:
+#     updateMode: "Off"  # HPA와 충돌 방지, 권장사항만 제공
+#   resourcePolicy:
+#     containerPolicies:
+#     - containerName: cn
+#       minAllowed:
+#         memory: "8Gi"
+#         cpu: "2"
+#       maxAllowed:
+#         memory: "32Gi"
+#         cpu: "16"
+#       controlledResources: ["cpu", "memory"]
+
+---
+# FE 스케일링 설정
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: fe-scaler
+  namespace: starrocks
+spec:
+  scaleTargetRef:
+    name: kube-starrocks-fe
+    kind: StatefulSet
+  minReplicaCount: 3
+  maxReplicaCount: 5
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 900  # 15분
+          policies:
+          - type: Pods
+            value: 1
+            periodSeconds: 300
+        scaleUp:
+          stabilizationWindowSeconds: 120
+          policies:
+          - type: Pods
+            value: 1
+            periodSeconds: 120
+  triggers:
+  - type: cpu
+    metricType: Utilization
+    metadata:
+      value: "60"
+  - type: prometheus
+    metadata:
+      serverAddress: http://monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090
+      metricName: fe_metadata_operations
+      query: |
+        rate(starrocks_fe_metadata_operation_total[5m])
+      threshold: "1000"

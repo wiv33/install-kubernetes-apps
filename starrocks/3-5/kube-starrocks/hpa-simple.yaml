@@ -1,0 +1,54 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: cn-scaler-simple
+  namespace: starrocks
+spec:
+  scaleTargetRef:
+    name: kube-starrocks-cn
+    kind: StatefulSet
+  minReplicaCount: 2
+  maxReplicaCount: 5
+  cooldownPeriod: 60  # 1분 쿨다운 (테스트용)
+  pollingInterval: 30  # 30초마다 체크
+  # 스케일 다운 정책 - 메모리 특성 고려
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          # 테스트를 위해 빠르게 스케일 다운
+          stabilizationWindowSeconds: 60  # 1분 관찰 (테스트용)
+          policies:
+          - type: Pods
+            value: 2  # 한번에 2개씩 (테스트용)
+            periodSeconds: 30  # 30초마다
+          selectPolicy: Min
+        scaleUp:
+          # 빠르게 스케일 업
+          stabilizationWindowSeconds: 30  # 30초 관찰
+          policies:
+          - type: Pods
+            value: 2  # 한번에 2개씩
+            periodSeconds: 30
+          selectPolicy: Max
+
+  triggers:
+  # CPU 사용률만 사용 (단순화)
+  - type: cpu
+    metricType: Utilization
+    metadata:
+      value: "50"  # 50% 이상일 때 스케일 업
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cn-pdb
+  namespace: starrocks
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: kube-starrocks
+      component: cn
+  unhealthyPodEvictionPolicy: IfHealthyBudget

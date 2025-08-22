@@ -1,0 +1,109 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: cn-scaler-prod
+  namespace: starrocks
+spec:
+  scaleTargetRef:
+    name: kube-starrocks-cn
+    kind: StatefulSet
+  minReplicaCount: 2
+  maxReplicaCount: 10
+  cooldownPeriod: 600  # 10분 쿨다운 (메모리 특성 고려)
+  pollingInterval: 30  # 30초마다 메트릭 체크
+  
+  # 고급 HPA 설정
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          # 메모리 특성을 고려한 보수적인 스케일 다운
+          stabilizationWindowSeconds: 900  # 15분 관찰
+          policies:
+          - type: Pods
+            value: 1  # 한번에 1개씩만 제거
+            periodSeconds: 300  # 5분마다
+          - type: Percent
+            value: 10  # 또는 10%씩 제거
+            periodSeconds: 300
+          selectPolicy: Min  # 더 보수적인 정책 선택
+        scaleUp:
+          # 부하 증가 시 빠른 대응
+          stabilizationWindowSeconds: 60  # 1분 관찰
+          policies:
+          - type: Pods
+            value: 2  # 한번에 2개씩 추가
+            periodSeconds: 60
+          - type: Percent
+            value: 50  # 또는 50% 증가
+            periodSeconds: 60
+          selectPolicy: Max  # 더 적극적인 정책 선택
+
+  triggers:
+  # 1. CPU 사용률 (주요 트리거)
+  - type: cpu
+    metricType: Utilization
+    metadata:
+      value: "60"  # CPU 60% 이상일 때 스케일 업
+  
+  # 2. 메모리 사용률 (보조 트리거)
+  - type: memory
+    metricType: Utilization
+    metadata:
+      value: "90"  # 메모리 80% 이상일 때 스케일 업
+
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cn-pdb
+  namespace: starrocks
+spec:
+  minAvailable: 2  # 최소 2개 노드는 항상 유지
+  selector:
+    matchLabels:
+      app: kube-starrocks
+      component: cn
+  unhealthyPodEvictionPolicy: IfHealthyBudget
+
+---
+# FE ScaledObject
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: fe-scaler
+  namespace: starrocks
+spec:
+  scaleTargetRef:
+    name: kube-starrocks-fe
+    kind: StatefulSet
+  minReplicaCount: 3
+  maxReplicaCount: 5
+  cooldownPeriod: 300
+  
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 600  # 10분
+          policies:
+          - type: Pods
+            value: 1
+            periodSeconds: 300
+        scaleUp:
+          stabilizationWindowSeconds: 120
+          policies:
+          - type: Pods
+            value: 1
+            periodSeconds: 120
+  
+  triggers:
+  - type: cpu
+    metricType: Utilization
+    metadata:
+      value: "60"
+  - type: memory
+    metricType: Utilization  
+    metadata:
+      value: "70"
