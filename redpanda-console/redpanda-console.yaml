@@ -7,7 +7,7 @@ config:
       enabled: true
     sasl:
       enabled: true
-      mechanism: PLAIN
+      mechanism: SCRAM-SHA-512
       username: ACCESS_KEY
       password: SECRET_KEY
 
